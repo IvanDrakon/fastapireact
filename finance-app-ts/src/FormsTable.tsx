@@ -1,54 +1,50 @@
-import { FormEvent, useEffect, useState } from "react";
-import api from "./api";
+// FormsTable.tsx
+import { FormEvent, useState } from "react";
+import { useForm } from "./useForm";
+import { useTransactions } from "./useTransactions";
+
+const initialFormData = {
+  id: 0,
+  amount: "",
+  category: "",
+  description: "",
+  is_income: 0,
+  date: "",
+};
 
 const FormsTable = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [formData, setFormData] = useState({
-    amount: "",
-    category: "",
-    description: "",
-    is_income: 0,
-    date: "",
-  });
-
-  const fetchTransactions = async () => {
-    const response = await api.get("/transactions/");
-    setTransactions(response.data);
-  };
-
-  const handleDelete = async (id: number) => {
-    await api.delete("/transactions/" + id);
-    fetchTransactions();
-  };
+  const { formData, handleInputChange, resetForm, setFormData } =
+    useForm(initialFormData);
+  const {
+    transactions,
+    deleteTransaction,
+    createTransaction,
+    updateTransaction,
+  } = useTransactions();
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const handleFormSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await api.post("/transactions/", formData);
-    fetchTransactions();
-    setFormData({
-      amount: "",
-      category: "",
-      description: "",
-      is_income: 0,
-      date: "",
-    });
-  };
-  const handleInputChange = (event: {
-    target: { type: string; checked: any; value: any; name: any };
-  }) => {
-    const value =
-      event.target.type === "checkbox"
-        ? event.target.checked
-        : event.target.value;
-    setFormData({
-      ...formData,
-      [event.target.name]: value,
-    });
+    if (editingId) {
+      await updateTransaction(editingId, formData);
+      setEditingId(null);
+    } else {
+      await createTransaction(formData);
+    }
+    resetForm();
   };
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  const handleEdit = (transaction: typeof initialFormData & { id: number }) => {
+    setFormData({
+      id: transaction.id,
+      amount: transaction.amount,
+      category: transaction.category,
+      description: transaction.description,
+      is_income: transaction.is_income,
+      date: transaction.date,
+    });
+    setEditingId(transaction.id);
+  };
 
   return (
     <div className="container">
@@ -102,7 +98,7 @@ const FormsTable = () => {
             id="is_income"
             name="is_income"
             onChange={handleInputChange}
-            value={formData.is_income}
+            checked={formData.is_income === 1}
           />
         </div>
         <div className="mb-3">
@@ -119,9 +115,22 @@ const FormsTable = () => {
           />
         </div>
         <button type="submit" className="btn btn-primary">
-          Submit
+          {editingId ? "Update" : "Submit"}
         </button>
+        {editingId && (
+          <button
+            type="button"
+            className="btn btn-secondary ms-2"
+            onClick={() => {
+              resetForm();
+              setEditingId(null);
+            }}
+          >
+            Cancel
+          </button>
+        )}
       </form>
+
       <div className="mb-3 mt-3">
         <table className="table table-striped table-bordered table-hover">
           <thead className="align-middle">
@@ -131,11 +140,11 @@ const FormsTable = () => {
               <th>Description</th>
               <th>Income?</th>
               <th>Date</th>
-              <th className="align-middle mx-auto">Delete</th>
+              <th className="align-middle mx-auto">Actions</th>
             </tr>
           </thead>
           <tbody className="align-middle">
-            {transactions.map((transaction: any) => (
+            {transactions.map((transaction) => (
               <tr key={transaction.id}>
                 <td>{transaction.amount}</td>
                 <td>{transaction.category}</td>
@@ -143,15 +152,18 @@ const FormsTable = () => {
                 <td>{transaction.is_income ? "Yes" : "No"}</td>
                 <td>{transaction.date}</td>
                 <td className="align-middle mx-auto">
-                  <div className="btn-group mx-auto" role="group">
-                    <button className="btn btn-warning">Edit</button>
-                    <button
-                      onClick={() => handleDelete(transaction.id)}
-                      className="btn btn-danger"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <button
+                    className="btn btn-warning me-2"
+                    onClick={() => handleEdit(transaction)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteTransaction(transaction.id)}
+                    className="btn btn-danger"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
