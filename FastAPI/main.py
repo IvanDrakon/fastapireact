@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends, Body
 from typing import Annotated, List
-from sqlalchemy.orm import Session
-from schemas import TransactionModel, TransactionBase
-from database import SessionLocal, engine
-import crud, models
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+import crud
+import models
+from database import SessionLocal, engine
+from schemas import TransactionModel, TransactionBase
 
 app = FastAPI()
 

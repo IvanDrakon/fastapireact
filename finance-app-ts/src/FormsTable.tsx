@@ -1,4 +1,3 @@
-// FormsTable.tsx
 import { FormEvent, useState } from "react";
 import { useForm } from "./useForm";
 import { useTransactions } from "./useTransactions";
